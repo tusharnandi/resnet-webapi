@@ -24,7 +24,8 @@ numpy
 matplotlib
 pillow
 #scikit-learn
-opencv
+opencv-python
+opencv-contrib-python
 flask
 #colorama
 

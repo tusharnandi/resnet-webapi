@@ -35,19 +35,30 @@ class DetectObjects():
 
         prediction = tf.keras.applications.imagenet_utils.decode_predictions(preds, top=3)[0];
 
-        
-
         return prediction
         
 ############################################
 #DelectObjects END
 
+###///
+#File upload internal function
+extensions = set(['jpg', 'png'])
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in extensions
 
+def getNewFilename(filename):
+    s=filename.split('.')
+    basename=s[0];
+    ext=s[1];
+    suffix = datetime.now().strftime("%y%m%dt%H%M%S")
+    newfilename = "".join([basename, suffix,'.',ext]) # e.g. 'mylogfile_120508_171442'
+
+    return newfilename
 
 #================================
-from flask import Flask, jsonify
+from flask import Flask, request,jsonify
 import os
-from flask import render_template, flash, request, redirect, url_for
+import json
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER']= "./static/queueImage/"
@@ -61,22 +72,42 @@ def home():
 @app.route('/api/v1/pic', methods = ['POST'])  
 def photo():
     if request.method == 'POST':  
-        f = request.files['file']  
-        f.save(os.path.join(app.config['UPLOAD_FOLDER'], f.filename))
-        imagePath = os.path.join(app.config['UPLOAD_FOLDER'], f.filename)
-        
-        retObj ={'index':'one' , 'name':'object' , 'probability':'0.0'}
+        # creating retlist       
+        retlist = []
+
         detectObj = DetectObjects()
-        predictObj= detectObj.record(imagePath)
-        if len(predictObj)>0:
-            predict = predictObj[0];
-            if len(predict)>0:
-                retObj ={'index':predict[0] , 'name':predict[1] , 'probability':str(predict[2])}
-                 
+
+        for key in request.files:
+            file=request.files[key]
+
+            if allowed_file(file.filename):
+                print( file.filename + ' is processing...');
+                
+                newfilename=getNewFilename(file.filename)
+                destFilePath = os.path.join(app.config['UPLOAD_FOLDER'], newfilename)
+                
+                file.save(destFilePath)
+                
+                predictObj= detectObj.record(destFilePath)
+                length = len(predictObj)
+
+                predict = []
+                for i in range(length):
+                    predict.append({'name':predictObj[i][1], 'probability': str(predictObj[i][2])})
+
+                retlist.append({'index':key , 'filename':file.filename,'predict':predict})
+
+            else:
+                #'content_type':file.content_type ,
+                print(file.filename + " not allowed to upload")
+                retlist.append({'index':key , 'filename':file.filename,'predict':None})
+
         
-        return jsonify(retObj)
+        return jsonify(retlist)
 
 
 #===============================
 if __name__== "__main__":
-    app.run(debug=True)
+    #from waitress import serve
+    #serve(app, host="0.0.0.0", port=8080)
+    app.run(host='0.0.0.0',port=5000)

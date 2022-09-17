@@ -23,4 +23,22 @@ python webapi.py
 
 ```
 docker run --publish 5000:5000 tusharkantinandi/python-predection:v1.0.0
+
+```
+
+
+command to create docker image
+```
+Create Dockerfile on root folder then 
+Build Images by using below command
+
+$docker build --tag ai-resnet-docker .
+
+
+Run container with port
+$docker run --publish 8000:5000 ai-resnet-docker
+OR
+$docker run --publish 5000:5000 ai-resnet-docker
+
+
 ```
